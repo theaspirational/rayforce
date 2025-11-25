@@ -3,6 +3,119 @@
 For benches we are using the following tool:
 [H2OAI Bench](https://h2oai.github.io/db-benchmark)
 
+## Highlights at a glance
+
+The charts below visualize the group-by and join timings to make it easier to see Rayforce's strengths versus other databases. Hover over the bars for exact timings.
+
+<div id="groupby-chart" style="height: 420px; margin-bottom: 1.5rem;"></div>
+<div id="join-chart" style="height: 320px;"></div>
+
+<script>
+  const groupByCategories = [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4",
+    "Q5",
+    "Q6",
+    "Q7"
+  ];
+
+  const groupBySeries = [
+    { name: "Rayforce", data: [60, 74, 118, 72, 122, 104, 1394] },
+    { name: "ClickHouse", data: [51, 189, 235, 47, 265, 249, 1732] },
+    { name: "DuckDB (multithread on)", data: [63, 153, 360, 23, 322, 330, 878] },
+    { name: "DuckDB (threads=1)", data: [347, 690, 601, 108, 440, 528, 3269] },
+    { name: "? (4.0)", data: [59, 143, 166, 99, 156, 551, 4497] },
+    { name: "ThePlatform", data: [213, 723, 507, 285, 488, 465, 15712] }
+  ];
+
+  const joinCategories = ["Q1: left join", "Q2: inner join"];
+
+  const joinSeries = [
+    { name: "Rayforce", data: [3149, 1610] },
+    { name: "? (4.0)", data: [3174, 3098] },
+    {
+      name: "DuckDB (multithread on)",
+      data: [null, null],
+      itemStyle: { opacity: 0.35 },
+      emphasis: { disabled: true }
+    },
+    {
+      name: "DuckDB (threads=1)",
+      data: [null, null],
+      itemStyle: { opacity: 0.35 },
+      emphasis: { disabled: true }
+    },
+    {
+      name: "ClickHouse",
+      data: [null, null],
+      itemStyle: { opacity: 0.35 },
+      emphasis: { disabled: true }
+    },
+    { name: "ThePlatform", data: [23987, null] }
+  ];
+
+  function ensureEchartsLoaded() {
+    return new Promise((resolve) => {
+      if (window.echarts) {
+        resolve(window.echarts);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js";
+      script.onload = () => resolve(window.echarts);
+      document.head.appendChild(script);
+    });
+  }
+
+  function createBarChart(targetId, categories, series, chartTitle) {
+    const chart = echarts.init(document.getElementById(targetId));
+    chart.setOption({
+      title: { text: chartTitle },
+      tooltip: {
+        trigger: "axis",
+        formatter: (params) => {
+          const item = Array.isArray(params) ? params[0] : params;
+          const value = item.value;
+          if (value === null || value === undefined) {
+            return `${item.seriesName} — ${item.name}: OOM or not reported`;
+          }
+          return `${item.seriesName} — ${item.name}: ${value} ms`;
+        }
+      },
+      legend: { top: 28 },
+      grid: { left: 60, right: 20, bottom: 80 },
+      xAxis: {
+        type: "category",
+        data: categories,
+        axisLabel: { rotate: 30 }
+      },
+      yAxis: {
+        type: "value",
+        name: "Milliseconds",
+        axisLabel: { formatter: "{value} ms" }
+      },
+      series: series.map((item) => ({
+        ...item,
+        type: "bar",
+        barMaxWidth: 38,
+        label: {
+          show: true,
+          position: "top",
+          formatter: ({ value }) => (value == null ? "" : `${value} ms`)
+        }
+      }))
+    });
+  }
+
+  ensureEchartsLoaded().then(() => {
+    createBarChart("groupby-chart", groupByCategories, groupBySeries, "Group-by benchmarks (lower is better)");
+    createBarChart("join-chart", joinCategories, joinSeries, "Join benchmarks (lower is better)");
+  });
+</script>
+
 ## Prerequisites
 
 Ubuntu:
